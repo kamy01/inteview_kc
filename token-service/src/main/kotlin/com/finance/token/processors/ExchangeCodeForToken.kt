@@ -9,6 +9,7 @@ import org.apache.camel.component.http.HttpMethods
 import org.eclipse.microprofile.config.inject.ConfigProperty
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
+import java.util.Optional
 
 @ApplicationScoped
 class ExchangeCodeForToken : Processor {
@@ -18,7 +19,7 @@ class ExchangeCodeForToken : Processor {
     @ConfigProperty(name = "kc.token.url") lateinit var kcTokenUrl: String
     @ConfigProperty(name = "oidc.client.id") lateinit var clientId: String
     @ConfigProperty(name = "oidc.redirect.uri") lateinit var redirectUri: String
-    @ConfigProperty(name = "oidc.client.assertion.kid") lateinit var clientKid: String
+    @ConfigProperty(name = "oidc.client.assertion.kid", defaultValue = "") var clientKid: Optional<String> = Optional.empty()
     @ConfigProperty(name = "oidc.client.assertion.audience") lateinit var clientAudience: String
     @ConfigProperty(name = "oidc.client.private-key.path") lateinit var privateKeyPath: String
 
@@ -29,7 +30,7 @@ class ExchangeCodeForToken : Processor {
         val assertion = signer.signClientAssertion(
             clientId = clientId,
             audience = clientAudience,
-            kid = clientKid,
+            kid = clientKid.orElse(null),
             privateKeyPath = privateKeyPath
         )
 

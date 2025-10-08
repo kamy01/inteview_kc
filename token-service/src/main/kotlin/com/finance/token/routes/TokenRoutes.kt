@@ -42,14 +42,17 @@ class TokenRoutes : RouteBuilder() {
             }
 
             // Call transactions-service
+            .setHeader(Exchange.HTTP_METHOD, constant("GET"))
             .setHeader("Authorization", simple("Bearer ${'$'}{exchangeProperty.accessToken}"))
-            .removeHeader(Exchange.CONTENT_TYPE)
-            .to(transactionsListUrl)
+            .setHeader("Accept", constant("application/json"))
+            .setBody(constant(null))
+            .toD("{{transactions.list.url}}&throwExceptionOnFailure=false")
             .process {
-                val json = it.`in`.getBody(String::class.java)
-                it.setProperty("transactionsJson", json)
-                val userId = Regex(""""userId"\s*:\s*"([^"]+)"""")
-                    .find(json)?.groupValues?.getOrNull(1) ?: "unknown"
+                val code = it.`in`.getHeader(Exchange.HTTP_RESPONSE_CODE, Int::class.java) ?: 0
+                val body = it.`in`.getBody(String::class.java)
+                if (code != 200) error("transactions-service $code: $body")
+                it.setProperty("transactionsJson", body)
+                val userId = Regex(""""userId"\s*:\s*"([^"]+)"""").find(body)?.groupValues?.getOrNull(1) ?: "unknown"
                 it.setProperty("userId", userId)
             }
 
